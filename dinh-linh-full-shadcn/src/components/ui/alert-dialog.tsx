@@ -1,0 +1,11 @@
+import * as React from "react";
+import * as A from "@radix-ui/react-alert-dialog";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
+const AlertDialog = A.Root; const AlertDialogTrigger = A.Trigger; const AlertDialogPortal = A.Portal; const AlertDialogTitle = A.Title; const AlertDialogDescription = A.Description;
+const AlertDialogAction = React.forwardRef<React.ElementRef<typeof A.Action>, React.ComponentPropsWithoutRef<typeof A.Action>>(({ className, ...props }, ref) => <A.Action ref={ref} className={cn(buttonVariants({ variant: "default" }), className)} {...props} />);
+const AlertDialogCancel = React.forwardRef<React.ElementRef<typeof A.Cancel>, React.ComponentPropsWithoutRef<typeof A.Cancel>>(({ className, ...props }, ref) => <A.Cancel ref={ref} className={cn(buttonVariants({ variant: "outline" }), className)} {...props} />);
+const AlertDialogContent = React.forwardRef<React.ElementRef<typeof A.Content>, React.ComponentPropsWithoutRef<typeof A.Content>>(({ className, ...props }, ref) => <AlertDialogPortal><A.Overlay className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm" /><A.Content ref={ref} className={cn("fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl", className)} {...props} /></AlertDialogPortal>);
+const AlertDialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("space-y-2 text-left", className)} {...props} />;
+const AlertDialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)} {...props} />;
+export { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel };
