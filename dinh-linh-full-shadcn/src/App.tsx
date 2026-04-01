@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Trash2, Save, UserRound, Hash, Pencil, Sparkles, Database, ListOrdered, Camera, Search, Filter } from "lucide-react";
+import { Trash2, Save, UserRound, Hash, Pencil, Sparkles, Database, ListOrdered, Camera, Search, Filter,Copy } from "lucide-react";
 import { motion } from "framer-motion";
 
 type ShippingStatus = "chưa đóng hàng" | "đã đóng hàng";
@@ -16,6 +16,48 @@ const formatDate = (value: string) => { try { return new Date(value).toLocaleStr
 const mergeUniqueNumbers = (currentNumbers: string[], newNumbers: string[]) => [...new Set([...currentNumbers, ...newNumbers])].sort((a, b) => Number(a) - Number(b));
 function normalizeStoredEntries(value: unknown): Entry[] { if (!Array.isArray(value)) return []; const normalized: Entry[] = []; value.forEach((item) => { const raw = item as Partial<Entry> & { orderNumber?: string }; const orderNumbers = Array.isArray(raw.orderNumbers) ? raw.orderNumbers.map((n) => String(n)) : raw.orderNumber ? [String(raw.orderNumber)] : []; if (!raw.id || !raw.igName || orderNumbers.length === 0 || !raw.createdAt) return; normalized.push({ id: String(raw.id), igName: String(raw.igName), orderNumbers, createdAt: String(raw.createdAt), shippingStatus: raw.shippingStatus === "đã đóng hàng" ? "đã đóng hàng" : "chưa đóng hàng" }); }); return normalized; }
 function parseOrderNumbers(input: string, existingEntries: Entry[]): ParseResult { const raw = input.trim(); if (!raw) return { ok: false, error: "Vui lòng nhập ít nhất một số thứ tự." }; const parsed = raw.split(",").map((i) => i.trim()).filter(Boolean); if (!parsed.length) return { ok: false, error: "Vui lòng nhập ít nhất một số thứ tự hợp lệ." }; if (parsed.some((i) => !/^\d+$/.test(i))) return { ok: false, error: "Số thứ tự chỉ được chứa số và ngăn cách bằng dấu phẩy." }; const normalized = parsed.map((i) => String(Number(i))); const dupInput = normalized.filter((item, index) => normalized.indexOf(item) !== index); if (dupInput.length) return { ok: false, error: `Các số thứ tự bị trùng trong ô nhập: ${[...new Set(dupInput)].join(", ")}.` }; const existing = new Set(existingEntries.flatMap((e) => e.orderNumbers)); const dupExisting = normalized.filter((item) => existing.has(item)); if (dupExisting.length) return { ok: false, error: `Các số thứ tự đã tồn tại: ${[...new Set(dupExisting)].join(", ")}.` }; return { ok: true, numbers: normalized }; }
+function legacyCopyText(text: string): boolean {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "0";
+  textarea.style.left = "0";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+
+  document.body.removeChild(textarea);
+  return copied;
+}
+
+async function copyText(text: string): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return legacyCopyText(text);
+    }
+  }
+
+  return legacyCopyText(text);
+}
 const createId = () => typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 export default function App(): React.JSX.Element {
   const [igName, setIgName] = useState(""); const [orderNumber, setOrderNumber] = useState(""); const [entries, setEntries] = useState<Entry[]>([]); const [message, setMessage] = useState(""); const [isClearDialogOpen, setIsClearDialogOpen] = useState(false); const [editingId, setEditingId] = useState<string | null>(null); const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null); const [searchQuery, setSearchQuery] = useState(""); const [statusFilter, setStatusFilter] = useState<StatusFilter>("tất cả");
