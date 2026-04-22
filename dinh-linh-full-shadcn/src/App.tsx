@@ -69,8 +69,20 @@ export default function App(): React.JSX.Element {
   const totalOrderNumbers = useMemo(()=>entries.reduce((t,x)=>t+x.orderNumbers.length,0), [entries]);
   const packedEntriesCount = useMemo(()=>entries.filter((x)=>x.shippingStatus==="đã đóng hàng").length, [entries]);
   const visibleOrderNumbers = useMemo(()=>filteredEntries.reduce((t,x)=>t+x.orderNumbers.length,0), [filteredEntries]);
+  const resetForm = () => { 
+  setEditingId(null); 
+  setIgName(""); 
+  setOrderNumber(""); 
+};
 
-  const resetForm = () => { setEditingId(null); setIgName(""); setOrderNumber(""); };
+const handleCancelEdit = () => {
+  resetForm();
+  setMessage("Đã hủy chỉnh sửa.");
+};
+  const handleCancelEdit = () => {
+  resetForm();
+  setMessage("Đã hủy chỉnh sửa.");
+};
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmedName = igName.trim();
@@ -91,7 +103,7 @@ export default function App(): React.JSX.Element {
     setEntries((prev)=>[...prev, { id:createId(), igName:trimmedName, orderNumbers:result.numbers, createdAt:new Date().toISOString(), shippingStatus:"chưa đóng hàng" }]);
     setIgName(""); setOrderNumber(""); setMessage("Đã lưu thành công.");
   };
-  const handleEdit = (id:string) => { const t=entries.find((x)=>x.id===id); if(!t) return; setEditingId(id); setIgName(t.igName); setOrderNumber(t.orderNumbers.join(", ")); setMessage("Đang chỉnh sửa mục đã chọn."); };
+  const handleEdit = (id:string) => { const t=entries.find((x)=>x.id===id); if(!t) return; setEditingId(id); setIgName(t.igName); setOrderNumber(t.orderNumbers.join(" ")); setMessage("Đang chỉnh sửa mục đã chọn."); };
   const handleDelete = (id:string) => setDeleteTargetId(id);
   const handleConfirmDelete = () => { if(!deleteTargetId) return; setEntries((prev)=>prev.filter((x)=>x.id!==deleteTargetId)); if(editingId===deleteTargetId) resetForm(); setDeleteTargetId(null); setMessage("Đã xóa mục đã chọn."); };
   const handleToggleShippingStatus = (id:string) => { setEntries((prev)=>prev.map((e)=>e.id===id ? { ...e, shippingStatus:e.shippingStatus==="đã đóng hàng" ? "chưa đóng hàng" : "đã đóng hàng", createdAt:new Date().toISOString() } : e)); setMessage("Đã cập nhật tình trạng đóng hàng."); };
