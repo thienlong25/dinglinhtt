@@ -28,7 +28,7 @@ function normalizeStoredEntries(value: unknown): Entry[] {
   });
 }
 function parseOrderNumbers(input: string, existingEntries: Entry[]): ParseResult {
-  const parsed = input.trim().split(",").map((x)=>x.trim()).filter(Boolean);
+  const parsed = input.trim().split(/\s+/).map((x)=>x.trim()).filter(Boolean);
   if (!parsed.length) return { ok:false, error:"Vui lòng nhập ít nhất một số thứ tự hợp lệ." };
   if (parsed.some((x)=>!/^\d+$/.test(x))) return { ok:false, error:"Số thứ tự chỉ được chứa số và ngăn cách bằng dấu phẩy." };
   const normalized = parsed.map((x)=>String(Number(x)));
@@ -132,7 +132,7 @@ export default function App(): React.JSX.Element {
                   </div>
                   <div className="space-y-2.5">
                     <label className="text-sm font-semibold text-slate-700">Số ID</label>
-                    <div className="relative"><Hash className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={orderNumber} onChange={(e)=>setOrderNumber(e.target.value)} placeholder="Ví dụ: 1, 2, 3" inputMode="text" className="h-12 rounded-2xl border-[#B3EBF2] bg-slate-50 pl-11 text-base shadow-none focus-visible:ring-2 focus-visible:ring-[#B3EBF2]" /></div>
+                    <div className="relative"><Hash className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={orderNumber} onChange={(e)=>setOrderNumber(e.target.value)} placeholder="Ví dụ: 1 2 3" inputMode="text" className="h-12 rounded-2xl border-[#B3EBF2] bg-slate-50 pl-11 text-base shadow-none focus-visible:ring-2 focus-visible:ring-[#B3EBF2]" /></div>
                   </div>
                   <div className="flex flex-wrap gap-3 pt-1">
                     <Button type="submit" className="h-12 flex-1 rounded-2xl bg-[#B3EBF2] text-slate-800 shadow-lg shadow-[#B3EBF2]/40 transition hover:bg-[#9fe3ec]"><Save className="mr-2 h-4 w-4" />{editingId ? "Lưu thay đổi" : "Submit"}</Button>
