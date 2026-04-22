@@ -54,6 +54,8 @@ export default function App(): React.JSX.Element {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("tất cả");
+  const formCardRef = useRef<HTMLDivElement | null>(null);
+  const igInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => { try { const saved = localStorage.getItem(STORAGE_KEY); if (saved) setEntries(normalizeStoredEntries(JSON.parse(saved))); } catch {} }, []);
   useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch {} }, [entries]);
@@ -99,7 +101,26 @@ const handleCancelEdit = () => {
     setEntries((prev)=>[...prev, { id:createId(), igName:trimmedName, orderNumbers:result.numbers, createdAt:new Date().toISOString(), shippingStatus:"chưa đóng hàng" }]);
     setIgName(""); setOrderNumber(""); setMessage("Đã lưu thành công.");
   };
-  const handleEdit = (id:string) => { const t=entries.find((x)=>x.id===id); if(!t) return; setEditingId(id); setIgName(t.igName); setOrderNumber(t.orderNumbers.join(" ")); setMessage("Đang chỉnh sửa mục đã chọn."); };
+ const handleEdit = (id: string) => {
+  const t = entries.find((x) => x.id === id);
+  if (!t) return;
+
+  setEditingId(id);
+  setIgName(t.igName);
+  setOrderNumber(t.orderNumbers.join(" "));
+  setMessage("Đang chỉnh sửa mục đã chọn.");
+
+  requestAnimationFrame(() => {
+    formCardRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    window.setTimeout(() => {
+      igInputRef.current?.focus();
+    }, 350);
+  });
+};
   const handleDelete = (id:string) => setDeleteTargetId(id);
   const handleConfirmDelete = () => { if(!deleteTargetId) return; setEntries((prev)=>prev.filter((x)=>x.id!==deleteTargetId)); if(editingId===deleteTargetId) resetForm(); setDeleteTargetId(null); setMessage("Đã xóa mục đã chọn."); };
   const handleToggleShippingStatus = (id:string) => { setEntries((prev)=>prev.map((e)=>e.id===id ? { ...e, shippingStatus:e.shippingStatus==="đã đóng hàng" ? "chưa đóng hàng" : "đã đóng hàng", createdAt:new Date().toISOString() } : e)); setMessage("Đã cập nhật tình trạng đóng hàng."); };
@@ -142,7 +163,12 @@ const handleCancelEdit = () => {
         </motion.div>
 
         <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-          <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:0.35}}>
+          <motion.div
+  ref={formCardRef}
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.35 }}
+>
             <Card className="flex h-[calc(100vh-12rem)] min-h-[720px] flex-col overflow-hidden rounded-[28px] border-white/70 bg-white/80 shadow-[0_20px_70px_rgba(15,23,42,0.08)] backdrop-blur">
               <div className="h-2 bg-slate-100" />
               <CardHeader className="pb-4">
@@ -153,7 +179,13 @@ const handleCancelEdit = () => {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2.5">
                     <label className="text-sm font-semibold text-slate-700">Tên IG</label>
-                    <div className="relative"><UserRound className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={igName} onChange={(e)=>setIgName(e.target.value)} placeholder="Nhập tên IG" className="h-12 rounded-2xl border-[#B3EBF2] bg-slate-50 pl-11 text-base shadow-none focus-visible:ring-2 focus-visible:ring-[#B3EBF2]" /></div>
+                    <div className="relative"><UserRound className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input
+  ref={igInputRef}
+  value={igName}
+  onChange={(e) => setIgName(e.target.value)}
+  placeholder="Nhập tên IG"
+  className="h-12 rounded-2xl border-[#B3EBF2] bg-slate-50 pl-11 text-base shadow-none focus-visible:ring-2 focus-visible:ring-[#B3EBF2]"
+/></div>
                   </div>
                   <div className="space-y-2.5">
                     <label className="text-sm font-semibold text-slate-700">Số ID</label>
