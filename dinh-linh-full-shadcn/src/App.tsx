@@ -111,7 +111,7 @@ const handleCancelEdit = () => {
       <div className="mx-auto max-w-6xl">
         <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} className="mb-6 overflow-hidden rounded-[32px] border border-white/60 bg-white/70 p-6 shadow-[0_20px_80px_rgba(15,23,42,0.08)] backdrop-blur md:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-           <div className="max-w-2xl">
+<div className="max-w-2xl">
   <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
     <Sparkles className="h-3.5 w-3.5" />
     IG Manager Dashboard
@@ -121,7 +121,7 @@ const handleCancelEdit = () => {
     <img
       src={dinhLinhImage}
       alt="Đinh Linh"
-      className="h-14 w-14 rounded-full object-cover border border-white/60 shadow-sm md:h-16 md:w-16"
+      className="h-24 w-24 rounded-2xl object-cover border border-white/60 shadow-sm md:h-28 md:w-28"
     />
     <div>
       <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
