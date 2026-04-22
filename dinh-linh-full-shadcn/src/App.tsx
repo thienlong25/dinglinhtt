@@ -74,12 +74,7 @@ export default function App(): React.JSX.Element {
   setIgName(""); 
   setOrderNumber(""); 
 };
-
 const handleCancelEdit = () => {
-  resetForm();
-  setMessage("Đã hủy chỉnh sửa.");
-};
-  const handleCancelEdit = () => {
   resetForm();
   setMessage("Đã hủy chỉnh sửa.");
 };
