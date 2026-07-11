@@ -292,7 +292,7 @@ const handleClearAll = async () => {
         Đinh Linh pass đồ
       </h1>
       <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 md:text-base">
-        Dinglinhtt x ThienLong
+        Dinglinhtt
       </p>
     </div>
   </div>
