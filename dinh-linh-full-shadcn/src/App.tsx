@@ -1,4 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  getDocs,
+} from "firebase/firestore";
+import { db } from "./firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -15,19 +25,11 @@ type ShippingStatus = "chưa đóng hàng" | "đã đóng hàng";
 type StatusFilter = "tất cả" | ShippingStatus;
 type Entry = { id: string; igName: string; orderNumbers: string[]; createdAt: string; shippingStatus: ShippingStatus; };
 type ParseResult = { ok: true; numbers: string[] } | { ok: false; error: string };
-const STORAGE_KEY = "ig_manager_entries_v1";
+
 
 function formatDate(v: string){ try { return new Date(v).toLocaleString("vi-VN"); } catch { return v; } }
 function mergeUniqueNumbers(a:string[],b:string[]){ return [...new Set([...a,...b])].sort((x,y)=>Number(x)-Number(y)); }
-function normalizeStoredEntries(value: unknown): Entry[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((item) => {
-    const raw = item as Partial<Entry> & { orderNumber?: string };
-    const orderNumbers = Array.isArray(raw.orderNumbers) ? raw.orderNumbers.map(String) : raw.orderNumber ? [String(raw.orderNumber)] : [];
-    if (!raw.id || !raw.igName || !raw.createdAt || orderNumbers.length === 0) return [];
-    return [{ id:String(raw.id), igName:String(raw.igName), orderNumbers, createdAt:String(raw.createdAt), shippingStatus: raw.shippingStatus === "đã đóng hàng" ? "đã đóng hàng" : "chưa đóng hàng" }];
-  });
-}
+
 function parseOrderNumbers(input: string, existingEntries: Entry[]): ParseResult {
   const parsed = input.trim().split(/\s+/).map((x)=>x.trim()).filter(Boolean);
   if (!parsed.length) return { ok:false, error:"Vui lòng nhập ít nhất một số thứ tự hợp lệ." };
@@ -40,7 +42,7 @@ function parseOrderNumbers(input: string, existingEntries: Entry[]): ParseResult
   if (dupExisting.length) return { ok:false, error:`Các số ID đã pass: ${[...new Set(dupExisting)].join(", ")}.` };
   return { ok:true, numbers: normalized };
 }
-function createId(){ return typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2,10)}`; }
+
 function legacyCopyText(text:string){ if(typeof document==="undefined") return false; const t=document.createElement("textarea"); t.value=text; t.setAttribute("readonly",""); t.style.position="fixed"; t.style.top="0"; t.style.left="0"; t.style.opacity="0"; document.body.appendChild(t); t.focus(); t.select(); t.setSelectionRange(0,t.value.length); let copied=false; try{ copied=document.execCommand("copy"); }catch{} document.body.removeChild(t); return copied; }
 async function copyText(text:string){ if(typeof navigator!=="undefined" && navigator.clipboard?.writeText){ try{ await navigator.clipboard.writeText(text); return true; }catch{ return legacyCopyText(text); } } return legacyCopyText(text); }
 
@@ -56,9 +58,22 @@ export default function App(): React.JSX.Element {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("tất cả");
   const formCardRef = useRef<HTMLDivElement | null>(null);
   const igInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+  const unsubscribe = onSnapshot(
+    collection(db, "entries"),
+    (snapshot) => {
+      const data = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      })) as Entry[];
 
-  useEffect(() => { try { const saved = localStorage.getItem(STORAGE_KEY); if (saved) setEntries(normalizeStoredEntries(JSON.parse(saved))); } catch {} }, []);
-  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch {} }, [entries]);
+      setEntries(data);
+    }
+  );
+
+  return () => unsubscribe();
+}, []);
+
   useEffect(() => { if(!message) return; const t=window.setTimeout(()=>setMessage(""),2500); return ()=>window.clearTimeout(t); }, [message]);
 
   const sortedEntries = useMemo(()=>[...entries].sort((a,b)=>Number(a.orderNumbers[0])-Number(b.orderNumbers[0])), [entries]);
@@ -81,7 +96,9 @@ const handleCancelEdit = () => {
   resetForm();
   setMessage("Đã hủy chỉnh sửa.");
 };
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+  e: React.FormEvent<HTMLFormElement>
+) =>{
     e.preventDefault();
     const trimmedName = igName.trim();
     if (!trimmedName) return setMessage("Vui lòng nhập tên IG.");
@@ -89,17 +106,63 @@ const handleCancelEdit = () => {
     const entriesToValidate = editingId ? entries.filter((e)=>e.id!==editingId) : entries.filter((e)=>e.igName.trim().toLowerCase()!==normalizedName);
     const result = parseOrderNumbers(orderNumber, entriesToValidate);
     if (!result.ok) return setMessage(result.error);
-    if (editingId) {
-      setEntries((prev)=>prev.map((e)=>e.id===editingId ? { ...e, igName: trimmedName, orderNumbers: result.numbers, createdAt:new Date().toISOString() } : e));
-      resetForm(); setMessage("Đã cập nhật thành công."); return;
+if (editingId) {
+
+  await updateDoc(
+    doc(db, "entries", editingId),
+    {
+      igName: trimmedName,
+      orderNumbers: result.numbers,
+      createdAt: new Date().toISOString(),
     }
+  );
+
+  resetForm();
+
+  setMessage("Đã cập nhật thành công.");
+
+  return;
+}
     const existingEntry = entries.find((e)=>e.igName.trim().toLowerCase()===normalizedName);
-    if (existingEntry) {
-      setEntries((prev)=>prev.map((e)=>e.id===existingEntry.id ? { ...e, orderNumbers: mergeUniqueNumbers(e.orderNumbers, result.numbers), createdAt:new Date().toISOString() } : e));
-      setIgName(""); setOrderNumber(""); setMessage("Tên IG đã tồn tại, đã gộp thêm số thứ tự vào dòng hiện có."); return;
+if (existingEntry) {
+
+  await updateDoc(
+    doc(db, "entries", existingEntry.id),
+    {
+      orderNumbers: mergeUniqueNumbers(
+        existingEntry.orderNumbers,
+        result.numbers
+      ),
+
+      createdAt: new Date().toISOString(),
     }
-    setEntries((prev)=>[...prev, { id:createId(), igName:trimmedName, orderNumbers:result.numbers, createdAt:new Date().toISOString(), shippingStatus:"chưa đóng hàng" }]);
-    setIgName(""); setOrderNumber(""); setMessage("Đã lưu thành công.");
+  );
+
+  setIgName("");
+
+  setOrderNumber("");
+
+  setMessage(
+    "Tên IG đã tồn tại, đã gộp thêm số thứ tự vào dòng hiện có."
+  );
+
+  return;
+}
+await addDoc(
+  collection(db, "entries"),
+  {
+    igName: trimmedName,
+    orderNumbers: result.numbers,
+    createdAt: new Date().toISOString(),
+    shippingStatus: "chưa đóng hàng",
+  }
+);
+
+setIgName("");
+
+setOrderNumber("");
+
+setMessage("Đã lưu thành công.");
   };
  const handleEdit = (id: string) => {
   const t = entries.find((x) => x.id === id);
