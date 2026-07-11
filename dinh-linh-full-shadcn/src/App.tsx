@@ -185,10 +185,90 @@ setMessage("Đã lưu thành công.");
   });
 };
   const handleDelete = (id:string) => setDeleteTargetId(id);
-  const handleConfirmDelete = () => { if(!deleteTargetId) return; setEntries((prev)=>prev.filter((x)=>x.id!==deleteTargetId)); if(editingId===deleteTargetId) resetForm(); setDeleteTargetId(null); setMessage("Đã xóa mục đã chọn."); };
-  const handleToggleShippingStatus = (id:string) => { setEntries((prev)=>prev.map((e)=>e.id===id ? { ...e, shippingStatus:e.shippingStatus==="đã đóng hàng" ? "chưa đóng hàng" : "đã đóng hàng", createdAt:new Date().toISOString() } : e)); setMessage("Đã cập nhật tình trạng đóng hàng."); };
+const handleConfirmDelete = async () => {
+  if (!deleteTargetId) return;
+
+  try {
+    await deleteDoc(
+      doc(db, "entries", deleteTargetId)
+    );
+
+    if (editingId === deleteTargetId) {
+      resetForm();
+    }
+
+    setDeleteTargetId(null);
+    setMessage("Đã xóa mục đã chọn.");
+  } catch (error) {
+    console.error(error);
+    setMessage("Lỗi khi xóa dữ liệu.");
+  }
+};
+ const handleToggleShippingStatus = async (
+  id: string
+) => {
+  try {
+    const entry = entries.find(
+      (e) => e.id === id
+    );
+
+    if (!entry) return;
+
+    await updateDoc(
+      doc(db, "entries", id),
+      {
+        shippingStatus:
+          entry.shippingStatus ===
+          "đã đóng hàng"
+            ? "chưa đóng hàng"
+            : "đã đóng hàng",
+
+        createdAt:
+          new Date().toISOString(),
+      }
+    );
+
+    setMessage(
+      "Đã cập nhật tình trạng đóng hàng."
+    );
+  } catch (error) {
+    console.error(error);
+    setMessage(
+      "Lỗi khi cập nhật trạng thái."
+    );
+  }
+};
   const handleCopyIgName = async (name:string) => setMessage((await copyText(name)) ? `Đã copy tên IG: ${name}` : "Không thể copy tên IG.");
-  const handleClearAll = () => { setEntries([]); resetForm(); setDeleteTargetId(null); setMessage("Đã xóa toàn bộ dữ liệu."); setIsClearDialogOpen(false); };
+const handleClearAll = async () => {
+  try {
+    const snapshot = await getDocs(
+      collection(db, "entries")
+    );
+
+    const promises = snapshot.docs.map(
+      (item) =>
+        deleteDoc(
+          doc(db, "entries", item.id)
+        )
+    );
+
+    await Promise.all(promises);
+
+    resetForm();
+    setDeleteTargetId(null);
+
+    setMessage(
+      "Đã xóa toàn bộ dữ liệu."
+    );
+
+    setIsClearDialogOpen(false);
+  } catch (error) {
+    console.error(error);
+    setMessage(
+      "Lỗi khi xóa toàn bộ dữ liệu."
+    );
+  }
+};
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.14),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] p-4 md:p-8">
